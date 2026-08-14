@@ -1,0 +1,8 @@
+# Xcode 派生数据（命令行构建产物）
+.build-xcode/
+
+# 用户态工程数据
+easy-webui.xcodeproj/xcuserdata/
+
+# macOS
+.DS_Store

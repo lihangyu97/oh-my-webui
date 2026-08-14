@@ -1,24 +1,33 @@
-//
-//  ContentView.swift
-//  easy-webui
-//
-//  Created by lihangyu on 2026/8/14.
-//
-
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @EnvironmentObject var model: AppModel
 
-#Preview {
-    ContentView()
+    var body: some View {
+        NavigationSplitView {
+            SidebarView()
+        } detail: {
+            if let cmd = model.selectedCommand {
+                CommandDetailView(command: cmd, runner: model.runtime(for: cmd))
+            } else {
+                ContentUnavailableView(
+                    "选择左侧服务",
+                    systemImage: "terminal",
+                    description: Text("或点击左下角 ＋ 添加一条启动命令")
+                )
+            }
+        }
+        .navigationSplitViewColumnWidth(min: 220, ideal: 260)
+        .sheet(isPresented: $model.presentEditor) {
+            CommandEditorSheet(editing: model.editorTarget)
+                .environmentObject(model)
+        }
+        .task {
+            model.autoStartOnce()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            model.stopAll()
+        }
+    }
 }
