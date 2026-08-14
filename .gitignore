@@ -1,8 +1,10 @@
 # Xcode 派生数据（命令行构建产物）
 .build-xcode/
+# 自定义 DerivedData 位置（Xcode → Settings → Locations）
+DerivedData/
 
-# 用户态工程数据
-easy-webui.xcodeproj/xcuserdata/
+# 用户态工程数据（工程根 + project.xcworkspace 下的 xcuserdata）
+easy-webui.xcodeproj/**/xcuserdata/
 
 # macOS
 .DS_Store

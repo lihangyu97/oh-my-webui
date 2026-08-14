@@ -153,7 +153,7 @@ final class WebCLIRunner: ObservableObject {
 │                              │ @Published: state / url / log    │
 │  ┌────────── 状态层 ─────────▼───────────────────────────────┐ │
 │  │ AppModel (ObservableObject)                              │ │
-│  │ ├─ 命令 CRUD ──▶ CommandStore（Codable → JSON 文件）       │ │
+│  │ ├─ 命令 CRUD ──▶ AppModel 内联持久化（JSON 文件）      │ │
 │  │ └─ 运行时表 [UUID: WebCLIRunner]（每服务一个）              │ │
 │  └───────────────────────────┬───────────────────────────────┘ │
 │  ┌────────── 进程层 ─────────▼───────────────────────────────┐ │
@@ -240,7 +240,7 @@ kill %1
 
 ```swift
 struct CommandApp: Codable, Identifiable {
-    var id: UUID
+    var id = UUID()
     var name: String                 // "dsh web"
     var command: String              // "npx @deepseek-ai/dsh web"
     var workingDirectory: String?    // 可选
@@ -249,6 +249,10 @@ struct CommandApp: Codable, Identifiable {
     var restartOnExit: Bool = false  // 退出后自动重启
 }
 ```
+
+> **首次运行行为**：默认**空列表**（无内置命令），全部由用户手动添加；
+> 命令持久化于 `~/Library/Application Support/easy-webui/commands.json`，
+> 每次增删改时整体覆写（Codable + 原子写入）。
 
 ```
             start                 spawn 成功
@@ -288,20 +292,26 @@ struct CommandApp: Codable, Identifiable {
 easy-webui/
 ├── easy_webuiApp.swift          # App 入口，注入 AppModel
 ├── ContentView.swift            # NavigationSplitView 主布局
+├── Assets.xcassets/             # AppIcon（10 尺寸 PNG）+ AccentColor（#38BDF7）
 ├── Models/
 │   ├── CommandApp.swift         # Codable 命令模型
 │   └── RunState.swift           # 运行状态枚举
-├── Stores/
-│   └── CommandStore.swift       # JSON 持久化
 ├── Services/
-│   ├── AppModel.swift           # 状态中枢（列表 + 运行时表）
-│   ├── WebCLIRunner.swift       # Process+Pipe 起停 / 输出扫描（核心，~150 行）
-│   └── ANSI.swift               # 去转义工具
-├── Views/
-│   ├── SidebarView.swift
-│   ├── CommandDetailView.swift  # 启停 / 状态 / URL chip
-│   └── CommandEditorSheet.swift # 添加/编辑表单
+│   ├── AppModel.swift           # 状态中枢（列表 + 运行时表）+ JSON 持久化内联
+│   └── WebCLIRunner.swift       # Process+Pipe 起停 / 输出扫描 / 去 ANSI（核心，~170 行）
+└── Views/
+    ├── SidebarView.swift
+    ├── CommandDetailView.swift  # 启停 / 状态 / URL chip
+    └── CommandEditorSheet.swift # 添加/编辑表单
+
+scripts/
+└── generate_app_icon.sh         # 从一张 1024×1024 主图生成 AppIcon 全部 10 个尺寸
 ```
+
+**资源与外观**：App 图标采用**传统 10 槽位** AppIcon（16/32/128/256/512 各 1x、2x，
+共 10 个 PNG），由 `scripts/generate_app_icon.sh` 从一张 1024×1024 主图一键生成；
+全局强调色 `AccentColor` 为 **#38BDF7**（sRGB，`AccentColor.colorset`），
+代码中通过 `.accentColor` 引用。
 
 ## 11. 路线图
 

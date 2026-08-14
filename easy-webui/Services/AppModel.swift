@@ -110,9 +110,7 @@ final class AppModel: ObservableObject {
            !list.isEmpty {
             return list
         }
-        // 首次运行：内置一条 dsh web 预设
-        return [
-            CommandApp(name: "dsh web", command: "npx @deepseek-ai/dsh web")
-        ]
+        // 首次运行：默认空列表，全部由用户手动添加
+        return []
     }
 }
