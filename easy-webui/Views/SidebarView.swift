@@ -16,16 +16,9 @@ struct SidebarView: View {
         }
         .navigationTitle("服务")
         .safeAreaInset(edge: .bottom) {
-            Button {
+            GlassButton("添加命令", systemImage: "plus", fillsWidth: true) {
                 model.beginAdd()
-            } label: {
-                Label("添加命令", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(Color.accentColor.opacity(0.18), in: Capsule())
             }
-            .buttonStyle(.plain)
-            .glassEffect(.regular, in: Capsule())
             .padding(8)
         }
     }

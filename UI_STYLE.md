@@ -12,7 +12,9 @@
    自绘按钮贴图、`Canvas` 绘制交互控件等）。
 
 2. **按钮样式分级**（按操作重要性选择）：
-   - 主要操作（启动/停止、添加、保存）→ `.buttonStyle(.borderedProminent)`
+   - 主要操作（启动/停止、添加、保存）→ **一律用 `GlassButton` 组件**
+     （`Views/GlassButton.swift`，封装了胶囊玻璃 + 语义色半透明背景），
+     通过参数传入文案/图标/颜色/宽度，**禁止**重复手写按钮样式；
    - 次要操作（取消、打开链接）→ 默认样式或 `.buttonStyle(.bordered)`
    - 工具栏/列表行内图标操作 → `.buttonStyle(.borderless)` + SF Symbol
    - 表单默认确认按钮 → `.keyboardShortcut(.defaultAction)`
@@ -45,8 +47,8 @@
 |----------|------|----------|
 | 主布局 / 侧边栏收起 | `NavigationSplitView`（系统自动） | ✅ |
 | 详情页工具栏"编辑" | `ToolbarItem` + SF Symbol | ✅ |
-| 启动 / 停止 | `.plain` + `Capsule()` 玻璃 + 语义色半透明背景/前景 | ✅ |
+| 启动 / 停止 | `GlassButton`（胶囊玻璃 + 语义色） | ✅ |
 | URL 打开 | `.bordered` + `.tint(.blue)` | ✅ |
-| 添加命令 | `.plain` + `Capsule()` 玻璃 + accentColor 半透明背景 | ✅ |
+| 添加命令 | `GlassButton`（胶囊玻璃 + accentColor） | ✅ |
 | 编辑表单 取消/添加 | 默认系统样式 + `.keyboardShortcut(.defaultAction)` | ✅ |
 | 运行状态指示 | `StatusDot`（涟漪动画） | ✅ |

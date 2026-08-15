@@ -47,22 +47,14 @@ struct CommandDetailView: View {
 
     private var controls: some View {
         HStack(spacing: 14) {
-            Button {
+            GlassButton(
+                runner.isRunning ? "停止" : "启动",
+                systemImage: runner.isRunning ? "stop.fill" : "play.fill",
+                tint: runner.isRunning ? .red : .accentColor,
+                minWidth: 84
+            ) {
                 model.toggle(command)
-            } label: {
-                Label(runner.isRunning ? "停止" : "启动",
-                      systemImage: runner.isRunning ? "stop.fill" : "play.fill")
-                    .foregroundStyle(runner.isRunning ? Color.red : Color.accentColor)
-                    .frame(minWidth: 84)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(
-                        (runner.isRunning ? Color.red : Color.accentColor).opacity(0.18),
-                        in: Capsule()
-                    )
             }
-            .buttonStyle(.plain)
-            .glassEffect(.regular, in: Capsule())
 
             HStack(spacing: 5) {
                 StatusDot(state: runner.state, size: 9)
