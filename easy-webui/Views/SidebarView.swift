@@ -22,7 +22,8 @@ struct SidebarView: View {
                 Label("添加命令", systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.borderedProminent)
+            .glassEffect(.regular)
             .padding(8)
         }
     }
