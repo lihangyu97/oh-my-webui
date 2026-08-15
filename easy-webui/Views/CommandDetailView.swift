@@ -56,9 +56,13 @@ struct CommandDetailView: View {
                     .frame(minWidth: 84)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
+                    .background(
+                        (runner.isRunning ? Color.red : Color.accentColor).opacity(0.18),
+                        in: Capsule()
+                    )
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 9))
+            .glassEffect(.regular, in: Capsule())
 
             HStack(spacing: 5) {
                 StatusDot(state: runner.state, size: 9)

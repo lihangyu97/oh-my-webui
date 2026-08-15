@@ -22,9 +22,10 @@ struct SidebarView: View {
                 Label("添加命令", systemImage: "plus")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    .background(Color.accentColor.opacity(0.18), in: Capsule())
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 9))
+            .glassEffect(.regular, in: Capsule())
             .padding(8)
         }
     }

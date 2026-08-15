@@ -26,10 +26,12 @@
 5. **macOS 26 玻璃效果**：
    - 系统按钮（`.bordered` / `.borderedProminent`）在 macOS 26 上**已自动玻璃化**，
      无需手动处理；
-   - **需要更强玻璃质感时**：用 `.buttonStyle(.plain)` 的按钮叠加
-     `.glassEffect(.regular)`（按钮无 tint 背景填充，玻璃边框干净不溢出），
-     语义色通过 Label 的 `.foregroundStyle`（`.red` / `.accentColor`）表达；
-   - **禁止**在有 tint 背景填充的按钮（如 `.borderedProminent` + `.tint`）
+   - **自定义玻璃按钮（胶囊形）**：`.buttonStyle(.plain)` + 
+     `.glassEffect(.regular, in: Capsule())`（两端半圆，等同 CSS
+     `height: X; border-radius: X/2`），背景色用语义色的**半透明填充**
+     加在玻璃内部（`.background(color.opacity(0.18), in: Capsule())`），
+     前景用对应语义色（`.foregroundStyle`）——形成 Liquid Glass 彩色玻璃效果；
+   - **禁止**在有 tint 背景填充的系统按钮（如 `.borderedProminent` + `.tint`）
      上叠加 `.glassEffect`（tint 背景色会溢出玻璃边框）；
 
 6. **状态指示**：统一使用 `Views/StatusDot.swift`（含运行中涟漪动画），
@@ -43,8 +45,8 @@
 |----------|------|----------|
 | 主布局 / 侧边栏收起 | `NavigationSplitView`（系统自动） | ✅ |
 | 详情页工具栏"编辑" | `ToolbarItem` + SF Symbol | ✅ |
-| 启动 / 停止 | `.plain` + `.glassEffect(.regular)`，语义色用 `.foregroundStyle` | ✅ |
+| 启动 / 停止 | `.plain` + `Capsule()` 玻璃 + 语义色半透明背景/前景 | ✅ |
 | URL 打开 | `.bordered` + `.tint(.blue)` | ✅ |
-| 添加命令 | `.plain` + `.glassEffect(.regular)` | ✅ |
+| 添加命令 | `.plain` + `Capsule()` 玻璃 + accentColor 半透明背景 | ✅ |
 | 编辑表单 取消/添加 | 默认系统样式 + `.keyboardShortcut(.defaultAction)` | ✅ |
 | 运行状态指示 | `StatusDot`（涟漪动画） | ✅ |
