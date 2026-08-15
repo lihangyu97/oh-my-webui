@@ -23,7 +23,7 @@ struct SidebarView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 6))
             .padding(8)
         }
     }
