@@ -23,10 +23,14 @@
 
 4. **图标**：一律用 SF Symbols（`systemImage:`），不引入图片资源替代。
 
-5. **macOS 26 玻璃效果**：系统组件（按钮、工具栏、列表、表单）在 macOS 26
-   上**已自动玻璃化，禁止再叠加 `.glassEffect`**（叠加会导致 tint 背景色
-   溢出玻璃边框）。`.glassEffect(.regular)` 仅用于**自定义内容容器**
-   （如自定义卡片、面板），且自定义容器上也不要用深色 tint 背景。
+5. **macOS 26 玻璃效果**：
+   - 系统按钮（`.bordered` / `.borderedProminent`）在 macOS 26 上**已自动玻璃化**，
+     无需手动处理；
+   - **需要更强玻璃质感时**：用 `.buttonStyle(.plain)` 的按钮叠加
+     `.glassEffect(.regular)`（按钮无 tint 背景填充，玻璃边框干净不溢出），
+     语义色通过 Label 的 `.foregroundStyle`（`.red` / `.accentColor`）表达；
+   - **禁止**在有 tint 背景填充的按钮（如 `.borderedProminent` + `.tint`）
+     上叠加 `.glassEffect`（tint 背景色会溢出玻璃边框）；
 
 6. **状态指示**：统一使用 `Views/StatusDot.swift`（含运行中涟漪动画），
    禁止在各处散落自画 `Circle` 表示状态。
@@ -39,8 +43,8 @@
 |----------|------|----------|
 | 主布局 / 侧边栏收起 | `NavigationSplitView`（系统自动） | ✅ |
 | 详情页工具栏"编辑" | `ToolbarItem` + SF Symbol | ✅ |
-| 启动 / 停止 | `.borderedProminent` + `.tint`（系统自动玻璃） | ✅ |
+| 启动 / 停止 | `.plain` + `.glassEffect(.regular)`，语义色用 `.foregroundStyle` | ✅ |
 | URL 打开 | `.bordered` + `.tint(.blue)` | ✅ |
-| 添加命令 | `.borderedProminent`（系统自动玻璃） | ✅ |
+| 添加命令 | `.plain` + `.glassEffect(.regular)` | ✅ |
 | 编辑表单 取消/添加 | 默认系统样式 + `.keyboardShortcut(.defaultAction)` | ✅ |
 | 运行状态指示 | `StatusDot`（涟漪动画） | ✅ |

@@ -52,10 +52,11 @@ struct CommandDetailView: View {
             } label: {
                 Label(runner.isRunning ? "停止" : "启动",
                       systemImage: runner.isRunning ? "stop.fill" : "play.fill")
+                    .foregroundStyle(runner.isRunning ? Color.red : Color.accentColor)
                     .frame(minWidth: 84)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(runner.isRunning ? .red : .accentColor)
+            .buttonStyle(.plain)
+            .glassEffect(.regular)
 
             HStack(spacing: 5) {
                 StatusDot(state: runner.state, size: 9)
