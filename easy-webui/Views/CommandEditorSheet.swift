@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct CommandEditorSheet: View {
     @EnvironmentObject var model: AppModel
@@ -22,7 +23,15 @@ struct CommandEditorSheet: View {
                 TextField("命令", text: $command,
                           prompt: Text("npx @deepseek-ai/dsh web"))
                     .font(.system(.body, design: .monospaced))
-                TextField("工作目录（可选）", text: $workingDirectory)
+                HStack(spacing: 8) {
+                    TextField("工作目录（可选）", text: $workingDirectory)
+                    Button {
+                        chooseWorkingDirectory()
+                    } label: {
+                        Label("选择…", systemImage: "folder")
+                    }
+                    .help("用 Finder 选择工作目录")
+                }
                 Toggle("App 启动时自动运行", isOn: $autoStart)
                 Toggle("退出后自动重启", isOn: $restartOnExit)
             }
@@ -46,6 +55,23 @@ struct CommandEditorSheet: View {
             workingDirectory = editing?.workingDirectory ?? ""
             autoStart = editing?.autoStart ?? false
             restartOnExit = editing?.restartOnExit ?? false
+        }
+    }
+
+    /// 唤起 Finder（NSOpenPanel）选择工作目录，选中后回填输入框
+    private func chooseWorkingDirectory() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "选择"
+        panel.title = "选择工作目录"
+        if !workingDirectory.isEmpty {
+            panel.directoryURL = URL(fileURLWithPath: workingDirectory)
+        }
+        if panel.runModal() == .OK, let url = panel.url {
+            workingDirectory = url.path
         }
     }
 

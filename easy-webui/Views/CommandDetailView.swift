@@ -5,13 +5,14 @@ struct CommandDetailView: View {
     @EnvironmentObject var model: AppModel
     let command: CommandApp
     @ObservedObject var runner: WebCLIRunner
+    @AppStorage("preferredBrowserPath") private var preferredBrowserPath = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
             controls
             if let url = runner.url {
-                urlButton(url)
+                urlSection(url)
             }
             Divider()
             logView
@@ -85,15 +86,58 @@ struct CommandDetailView: View {
 
     // MARK: - URL
 
-    private func urlButton(_ url: URL) -> some View {
-        Button {
-            NSWorkspace.shared.open(url)
-        } label: {
-            Label(url.absoluteString, systemImage: "arrow.up.right.square")
+    /// 链接 + 三个操作：复制 / 默认浏览器 / 指定浏览器
+    private func urlSection(_ url: URL) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                NSWorkspace.shared.open(url)
+            } label: {
+                Label(url.absoluteString, systemImage: "arrow.up.right.square")
+            }
+            .buttonStyle(.bordered)
+            .tint(.blue)
+            .help("在浏览器中打开")
+
+            HStack(spacing: 8) {
+                Button {
+                    copyLink(url)
+                } label: {
+                    Label("复制链接", systemImage: "doc.on.doc")
+                }
+                .help("复制地址到剪贴板")
+
+                Button {
+                    NSWorkspace.shared.open(url)
+                } label: {
+                    Label("默认浏览器", systemImage: "safari")
+                }
+                .help("用系统默认浏览器打开")
+
+                Button {
+                    openInPreferredBrowser(url)
+                } label: {
+                    Label("指定浏览器", systemImage: "app.badge")
+                }
+                .disabled(preferredBrowserPath.isEmpty)
+                .help(preferredBrowserPath.isEmpty
+                      ? "尚未设置指定浏览器（设置…中选择）"
+                      : "用设置中指定的浏览器打开")
+            }
+            .buttonStyle(.bordered)
         }
-        .buttonStyle(.bordered)
-        .tint(.blue)
-        .help("在浏览器中打开")
+    }
+
+    private func copyLink(_ url: URL) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(url.absoluteString, forType: .string)
+    }
+
+    private func openInPreferredBrowser(_ url: URL) {
+        guard !preferredBrowserPath.isEmpty else { return }
+        let appURL = URL(fileURLWithPath: preferredBrowserPath)
+        NSWorkspace.shared.open([url], withApplicationAt: appURL,
+                                configuration: NSWorkspace.OpenConfiguration())
     }
 
     // MARK: - 日志

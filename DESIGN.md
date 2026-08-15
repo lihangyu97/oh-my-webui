@@ -50,7 +50,7 @@ import Foundation
 final class WebCLIRunner: ObservableObject {
     @Published private(set) var url: URL?
     @Published private(set) var state: State = .stopped
-    @Published private(set) var recentLog: [String] = []   // 最近 ~20 行（已去 ANSI）
+    @Published private(set) var recentLog: [String] = []   // 最近 ~10 行（已去 ANSI）
 
     enum State: Equatable { case stopped, starting, running, stopping, exited(Int32) }
 

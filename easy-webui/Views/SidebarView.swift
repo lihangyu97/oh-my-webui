@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         List(selection: $model.selectedID) {
@@ -16,8 +17,23 @@ struct SidebarView: View {
         }
         .navigationTitle("服务")
         .safeAreaInset(edge: .bottom) {
-            GlassButton("添加命令", systemImage: "plus", fillsWidth: true) {
-                model.beginAdd()
+            HStack(spacing: 8) {
+                GlassButton("添加命令", systemImage: "plus", fillsWidth: true) {
+                    model.beginAdd()
+                }
+
+                // 圆形玻璃设置按钮，打开设置窗口
+                Button {
+                    openWindow(id: "settings")
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular, in: Circle())
+                .help("设置")
             }
             .padding(8)
         }

@@ -15,7 +15,7 @@ final class WebCLIRunner: ObservableObject {
     private var process: Process?
     private var buffer = Data()            // 跨 read 块拼接，防止 URL 被拦腰切断
     private var stopRequested = false
-    private let maxLogLines = 20
+    private let maxLogLines = 10
 
     private let urlRegex: NSRegularExpression
 
