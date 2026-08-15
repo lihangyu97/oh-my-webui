@@ -64,9 +64,11 @@ final class WebCLIRunner: ObservableObject {
         p.standardInput = FileHandle.nullDevice   // 无交互输入，防意外挂起等 EOF
 
         p.terminationHandler = { [weak self] proc in
-            Task { @MainActor [weak self] in
+            // 外层显式弱捕获（同 startReading：Swift 6.2 嵌套闭包捕获会传导到外层）
+            guard let self else { return }
+            Task { @MainActor in
                 // 只处理自己的进程：快速重启时，旧进程的退出回调不能误清新进程
-                guard let self, self.process === proc else { return }
+                guard self.process === proc else { return }
                 let code = proc.terminationStatus
                 self.state = (self.stopRequested || code == 0) ? .stopped : .exited(code: code)
                 self.process = nil
@@ -112,14 +114,21 @@ final class WebCLIRunner: ObservableObject {
     // MARK: - 输出处理
 
     private func startReading(_ handle: FileHandle) {
-        handle.readabilityHandler = { h in
+        handle.readabilityHandler = { [weak self] h in
+            // Swift 6.2 起嵌套闭包对 self 的捕获会传导到外层：外层不写 weak 的话，
+            // readabilityHandler（被 FileHandle 持有）会强持有 self，内层 weak 形同虚设，
+            // 且形成 FileHandle→闭包→self 的强环直到 EOF 才断开。这里外层显式弱捕获。
+            guard let self else {
+                h.readabilityHandler = nil
+                return
+            }
             let data = h.availableData
             if data.isEmpty {              // EOF
                 h.readabilityHandler = nil
                 return
             }
-            Task { @MainActor [weak self] in
-                self?.consume(data)
+            Task { @MainActor in
+                self.consume(data)
             }
         }
     }

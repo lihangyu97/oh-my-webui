@@ -42,6 +42,14 @@ struct CommandDetailView: View {
                 .font(.system(.body, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
+            if let wd = command.workingDirectory, !wd.isEmpty {
+                Text(wd)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+            }
         }
     }
 
