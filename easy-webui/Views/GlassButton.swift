@@ -7,10 +7,10 @@ import SwiftUI
 ///
 /// 用法：
 /// ```swift
-/// GlassButton("启动", systemImage: "play.fill", tint: .accentColor, minWidth: 84) {
+/// GlassButton("启动", systemImage: "play.fill", tint: .green, minWidth: 84) {
 ///     model.toggle(command)
 /// }
-/// GlassButton("添加命令", systemImage: "plus", fillsWidth: true) {
+/// GlassButton("添加命令", systemImage: "plus") {
 ///     model.beginAdd()
 /// }
 /// ```

@@ -50,7 +50,7 @@ struct CommandDetailView: View {
             GlassButton(
                 runner.isRunning ? "停止" : "启动",
                 systemImage: runner.isRunning ? "stop.fill" : "play.fill",
-                tint: runner.isRunning ? .red : .accentColor,
+                tint: runner.isRunning ? .red : .green,
                 minWidth: 84
             ) {
                 model.toggle(command)

@@ -31,17 +31,22 @@ private struct CommandRowView: View {
     let command: CommandApp
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             StatusDot(state: runner.state)
-            VStack(alignment: .leading, spacing: 1) {
+                .padding(.trailing, 2)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(command.name)
+                    .font(.callout)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
                 Text(command.command)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 7)
     }
 }
