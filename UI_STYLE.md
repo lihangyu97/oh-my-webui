@@ -13,7 +13,6 @@
 
 2. **按钮样式分级**（按操作重要性选择）：
    - 主要操作（启动/停止、添加、保存）→ `.buttonStyle(.borderedProminent)`
-     + `.glassEffect(.regular)`
    - 次要操作（取消、打开链接）→ 默认样式或 `.buttonStyle(.bordered)`
    - 工具栏/列表行内图标操作 → `.buttonStyle(.borderless)` + SF Symbol
    - 表单默认确认按钮 → `.keyboardShortcut(.defaultAction)`
@@ -24,9 +23,10 @@
 
 4. **图标**：一律用 SF Symbols（`systemImage:`），不引入图片资源替代。
 
-5. **macOS 26 玻璃效果**：需要强调玻璃质感的按钮/容器加
-   `.glassEffect(.regular)`；系统组件（工具栏、列表、表单）默认已玻璃化，
-   无需重复添加。
+5. **macOS 26 玻璃效果**：系统组件（按钮、工具栏、列表、表单）在 macOS 26
+   上**已自动玻璃化，禁止再叠加 `.glassEffect`**（叠加会导致 tint 背景色
+   溢出玻璃边框）。`.glassEffect(.regular)` 仅用于**自定义内容容器**
+   （如自定义卡片、面板），且自定义容器上也不要用深色 tint 背景。
 
 6. **状态指示**：统一使用 `Views/StatusDot.swift`（含运行中涟漪动画），
    禁止在各处散落自画 `Circle` 表示状态。
@@ -39,8 +39,8 @@
 |----------|------|----------|
 | 主布局 / 侧边栏收起 | `NavigationSplitView`（系统自动） | ✅ |
 | 详情页工具栏"编辑" | `ToolbarItem` + SF Symbol | ✅ |
-| 启动 / 停止 | `.borderedProminent` + `.glassEffect(.regular)` + `.tint` | ✅ |
+| 启动 / 停止 | `.borderedProminent` + `.tint`（系统自动玻璃） | ✅ |
 | URL 打开 | `.bordered` + `.tint(.blue)` | ✅ |
-| 添加命令 | `.borderedProminent` + `.glassEffect(.regular)` | ✅ |
+| 添加命令 | `.borderedProminent`（系统自动玻璃） | ✅ |
 | 编辑表单 取消/添加 | 默认系统样式 + `.keyboardShortcut(.defaultAction)` | ✅ |
 | 运行状态指示 | `StatusDot`（涟漪动画） | ✅ |

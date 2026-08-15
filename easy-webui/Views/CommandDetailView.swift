@@ -56,7 +56,6 @@ struct CommandDetailView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(runner.isRunning ? .red : .accentColor)
-            .glassEffect(.regular)
 
             HStack(spacing: 5) {
                 StatusDot(state: runner.state, size: 9)
