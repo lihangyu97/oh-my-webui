@@ -21,9 +21,10 @@ struct SidebarView: View {
             } label: {
                 Label("添加命令", systemImage: "plus")
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 6))
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 9))
             .padding(8)
         }
     }
