@@ -8,3 +8,6 @@ easy-webui.xcodeproj/**/xcuserdata/
 
 # macOS
 .DS_Store
+
+# 发布产物（DMG）
+dist/
