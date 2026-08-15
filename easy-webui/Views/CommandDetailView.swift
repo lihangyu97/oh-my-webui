@@ -109,14 +109,14 @@ struct CommandDetailView: View {
                 Button {
                     NSWorkspace.shared.open(url)
                 } label: {
-                    Label("默认浏览器", systemImage: "safari")
+                    browserLabel(title: "默认浏览器", icon: defaultBrowserIcon)
                 }
                 .help("用系统默认浏览器打开")
 
                 Button {
                     openInPreferredBrowser(url)
                 } label: {
-                    Label("指定浏览器", systemImage: "app.badge")
+                    browserLabel(title: "指定浏览器", icon: preferredBrowserIcon)
                 }
                 .disabled(preferredBrowserPath.isEmpty)
                 .help(preferredBrowserPath.isEmpty
@@ -125,6 +125,33 @@ struct CommandDetailView: View {
             }
             .buttonStyle(.bordered)
         }
+    }
+
+    /// 浏览器按钮内容：实时 App 图标 + 文案（取不到图标时回退 SF Symbol）
+    private func browserLabel(title: String, icon: NSImage?) -> some View {
+        HStack(spacing: 4) {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: "safari")
+            }
+            Text(title)
+        }
+    }
+
+    /// 系统默认浏览器的实时图标
+    private var defaultBrowserIcon: NSImage? {
+        guard let url = NSWorkspace.shared.urlForApplication(toOpen: URL(string: "https://")!)
+        else { return nil }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }
+
+    /// 设置中指定浏览器的实时图标
+    private var preferredBrowserIcon: NSImage? {
+        guard !preferredBrowserPath.isEmpty else { return nil }
+        return NSWorkspace.shared.icon(forFile: preferredBrowserPath)
     }
 
     private func copyLink(_ url: URL) {

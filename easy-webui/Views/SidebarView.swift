@@ -22,7 +22,7 @@ struct SidebarView: View {
                     model.beginAdd()
                 }
 
-                // 圆形玻璃设置按钮，打开设置窗口
+                // 圆形玻璃设置按钮，打开设置窗口（整圆均可点击）
                 Button {
                     openWindow(id: "settings")
                 } label: {
@@ -30,6 +30,7 @@ struct SidebarView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                         .frame(width: 36, height: 36)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular, in: Circle())

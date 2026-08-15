@@ -50,7 +50,7 @@ import Foundation
 final class WebCLIRunner: ObservableObject {
     @Published private(set) var url: URL?
     @Published private(set) var state: State = .stopped
-    @Published private(set) var recentLog: [String] = []   // 最近 ~10 行（已去 ANSI）
+    @Published private(set) var recentLog: [String] = []   // 最近 ~100 行（已去 ANSI）
 
     enum State: Equatable { case stopped, starting, running, stopping, exited(Int32) }
 
@@ -107,7 +107,7 @@ final class WebCLIRunner: ObservableObject {
                    let r = Range(m.range(at: 0), in: clean),
                    let u = URL(string: String(clean[r])) { self.url = u }
                 self.recentLog.append(clean)
-                if self.recentLog.count > 200 { self.recentLog.removeFirst(self.recentLog.count - 200) }
+                if self.recentLog.count > 100 { self.recentLog.removeFirst(self.recentLog.count - 100) }
             }
         }
     }
