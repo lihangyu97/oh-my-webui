@@ -319,3 +319,49 @@ scripts/
 - **Phase 1 · 核心**：`WebCLIRunner` + 状态机 + URL 扫描（先做出能抓 `dsh web` 地址的 Demo）
 - **Phase 2 · 界面**：侧栏 CRUD + 详情页 + URL chip 点击开浏览器 + JSON 持久化
 - **Phase 3 · 打磨**：优雅停止（整组杀）、自动重启、崩溃提示、状态栏
+
+## 12. 内置浏览器窗口（WKWebView）
+
+> 详情页 URL 区域新增"在 App 内打开"按钮（位于"复制链接"与"默认浏览器"之间），
+> 点击后打开独立窗口内嵌 WKWebView 加载该服务的当前地址，无需跳外部浏览器。
+
+**实现要点**（`easy-webui/Views/WebViewWindow.swift` + `easy_webuiApp.swift` 的
+`WindowGroup("内置浏览器", id: "webview", for: UUID.self)`）：
+
+> 窗口样式可在设置页切换（`@AppStorage("webWindowStyle")`，改完即时生效）：
+> - **正常**：标准标题栏（标题 + 红绿灯），无工具栏按钮、无地址栏
+> - **沉浸式**：隐藏标题栏与红绿灯，WKWebView 顶到窗口边缘；顶部留 24pt 隐形
+>   拖拽条（`mouseDownCanMoveWindow`）保证可拖动，关窗用 ⌘W / 菜单
+>
+> **实现要点**：窗口**统一由场景层以 `.windowStyle(.hiddenTitleBar)` 建窗**（沉浸式
+> 由 SwiftUI 保证内容顶到边缘）。不能在标准窗口上运行时插 `.fullSizeContentView`——
+> SwiftUI 建窗阶段会重置 styleMask，结果只剩一条空白标题栏（实测踩坑）。
+> "正常"样式由 `WindowChromeConfigurator`（背景零尺寸 NSView）在运行时**还原**
+> 标题栏：移除 `.fullSizeContentView`、`titlebarAppearsTransparent=false`、
+> `titleVisibility=.visible`、红绿灯显隐；SwiftUI 只在建窗时设置一次 styleMask，
+> 之后的改动不会被覆盖，所以还原方向可靠、设置切换对已打开窗口即时生效。
+> （另：本 SDK 的 SceneBuilder 不支持普通 if 语句，无法按设置分支建窗，故统一
+> hiddenTitleBar 再还原是唯一稳妥路径。）
+>
+> **两个实测坑（已修）**：
+> 1. 即使 fullSizeContentView 生效，SwiftUI 内容仍从标题栏安全区下方开始渲染，
+>    顶部会透出窗口背景成一条白色"标题栏"→ 内容必须 `.ignoresSafeArea()`。
+> 2. 拖拽条若用 VStack 叠在内容上方会把内容挤下去 → 改用 ZStack **悬浮覆盖**
+>    （`mouseDownCanMoveWindow` 的 24pt 透明条在最上层），内容才能真正到顶。
+> 3. **先正常后切沉浸式**会丢 `.fullSizeContentView`（正常模式移除后没补回）→
+>    沉浸式分支必须 `styleMask.insert(.fullSizeContentView)`（实测 styleMask
+>    15 → 32783 后内容才重新顶到边缘）。
+
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| 窗口形态 | `WindowGroup(for: UUID.self)`，按 **commandID** 打开 | 每个服务一个窗口；同服务重复点击复用已有窗口（`openWindow(id:value:)`）；关窗即销毁内容视图 → WKWebView 释放 |
+| 内存策略 | **按需创建、关闭即销毁**，无常驻 | 每个开着的窗口 = 1 个 WebKit 渲染进程；关掉由系统回收（有短暂延迟但不泄漏），不随服务数常驻 |
+| URL 跟随 | 观察 runner.url，变化时重新加载 | 服务重启/端口变更后窗口自动刷新到新地址，不产生孤儿窗口 |
+| 数据存储 | `WKWebsiteDataStore.nonPersistent()` | 每次开窗口全新会话，cookie/localStorage 不留盘 |
+| 新窗口链接 | `WKUIDelegate.createWebViewWith` 返回 nil + 当前 WebView 跳转 | target=_blank / window.open 一律同窗口跳转，简单顺手 |
+| 关窗清理 | `CleanupWebView.viewWillMove(toWindow: nil)` 时 `stopLoading()` | 停掉进行中加载，让渲染进程尽快回收 |
+| 状态恢复 | `.restorationBehavior(.disabled)` | 避免重启后恢复出指向已删除命令的孤儿窗口 |
+
+应用体积影响 ≈ 0（WebKit 为系统框架，动态链接）；内存与 Safari 标签页同引擎、基本持平，
+省的是浏览器 UI 进程；相对 Electron/CEF 则省整个 Chromium 运行时（几百 MB 级）。
+

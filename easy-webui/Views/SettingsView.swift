@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 /// 未设置时使用系统默认浏览器。
 struct SettingsView: View {
     @AppStorage("preferredBrowserPath") private var preferredBrowserPath = ""
+    @AppStorage("webWindowStyle") private var webWindowStyle = WebWindowStyle.normal.rawValue
 
     /// 常见浏览器（按 bundle id 检测，装了的才会出现在列表里）
     private static let knownBrowsers: [(name: String, bundleID: String)] = [
@@ -40,6 +41,19 @@ struct SettingsView: View {
 
             Text("未设置时使用系统默认浏览器打开链接；"
                  + "指定后，详情页链接下方会显示“指定浏览器打开”按钮。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            Picker("内置浏览器窗口样式", selection: $webWindowStyle) {
+                ForEach(WebWindowStyle.allCases) { style in
+                    Text(style.label).tag(style.rawValue)
+                }
+            }
+            .help("详情页“在 App 内打开”的内置浏览器窗口外观；切换后已打开的窗口立即生效")
+
+            Text("沉浸式会隐藏标题栏和红绿灯，窗口只能通过 ⌘W 或菜单关闭。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

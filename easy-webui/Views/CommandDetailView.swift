@@ -3,6 +3,7 @@ import AppKit
 
 struct CommandDetailView: View {
     @EnvironmentObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
     let command: CommandApp
     @ObservedObject var runner: WebCLIRunner
     @AppStorage("preferredBrowserPath") private var preferredBrowserPath = ""
@@ -105,6 +106,13 @@ struct CommandDetailView: View {
                     Label("复制链接", systemImage: "doc.on.doc")
                 }
                 .help("复制地址到剪贴板")
+
+                Button {
+                    openWindow(id: "webview", value: command.id)
+                } label: {
+                    Label("在 App 内打开", systemImage: "macwindow")
+                }
+                .help("在内置浏览器窗口中打开")
 
                 Button {
                     NSWorkspace.shared.open(url)
