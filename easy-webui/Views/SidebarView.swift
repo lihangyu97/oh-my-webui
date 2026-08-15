@@ -6,7 +6,7 @@ struct SidebarView: View {
     var body: some View {
         List(selection: $model.selectedID) {
             ForEach(model.commands) { command in
-                row(for: command)
+                CommandRowView(runner: model.runtime(for: command), command: command)
                     .tag(command.id)
                     .contextMenu {
                         Button("编辑…") { model.beginEdit(command) }
@@ -26,13 +26,17 @@ struct SidebarView: View {
             .padding(8)
         }
     }
+}
 
-    private func row(for command: CommandApp) -> some View {
-        let runner = model.runtime(for: command)
-        return HStack(spacing: 8) {
-            Circle()
-                .fill(color(for: runner.state))
-                .frame(width: 8, height: 8)
+/// 单条命令行：状态点（实时动画）+ 名称/命令。
+/// 必须用 @ObservedObject 观察 runner，状态变化才会实时刷新本行。
+private struct CommandRowView: View {
+    @ObservedObject var runner: WebCLIRunner
+    let command: CommandApp
+
+    var body: some View {
+        HStack(spacing: 8) {
+            StatusDot(state: runner.state)
             VStack(alignment: .leading, spacing: 1) {
                 Text(command.name)
                 Text(command.command)
@@ -42,23 +46,6 @@ struct SidebarView: View {
                     .truncationMode(.tail)
             }
             Spacer()
-            Button {
-                model.toggle(command)
-            } label: {
-                Image(systemName: runner.isRunning ? "stop.circle.fill" : "play.circle.fill")
-                    .foregroundStyle(runner.isRunning ? Color.red : Color.green)
-            }
-            .buttonStyle(.borderless)
-            .help(runner.isRunning ? "停止" : "启动")
-        }
-    }
-
-    private func color(for state: RunState) -> Color {
-        switch state {
-        case .running: .green
-        case .starting, .stopping: .orange
-        case .exited: .red
-        case .stopped: .gray
         }
     }
 }

@@ -58,9 +58,7 @@ struct CommandDetailView: View {
             .tint(runner.isRunning ? .red : .accentColor)
 
             HStack(spacing: 5) {
-                Circle()
-                    .fill(stateColor)
-                    .frame(width: 9, height: 9)
+                StatusDot(state: runner.state, size: 9)
                 Text(runner.state.label)
                     .font(.callout)
             }
@@ -83,15 +81,6 @@ struct CommandDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-
-    private var stateColor: Color {
-        switch runner.state {
-        case .running: .green
-        case .starting, .stopping: .orange
-        case .exited: .red
-        case .stopped: .gray
         }
     }
 
