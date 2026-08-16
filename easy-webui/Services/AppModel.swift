@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WebKit
 
 /// 状态中枢：命令列表 + 每命令的运行实例
 @MainActor
@@ -92,6 +93,16 @@ final class AppModel: ObservableObject {
             selectedID = commands.first?.id
         }
         save()
+        purgeWebData(for: command.id)
+    }
+
+    /// 删除服务时清掉它的持久化网页数据（localStorage/cookie 等）。
+    /// 需先释放使用该 store 的 WKWebView：窗口内容此时已切到"服务不存在"，
+    /// 但 SwiftUI 释放视图树有短暂延迟，故延后 2 秒再删，失败则忽略（数据残留无害）。
+    private func purgeWebData(for id: UUID) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            WKWebsiteDataStore.remove(forIdentifier: id) { _ in }
+        }
     }
 
     // MARK: - 持久化
