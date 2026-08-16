@@ -48,15 +48,21 @@ die() { printf '\033[1;31m!!\033[0m %s\n' "$*" >&2; exit 1; }
 trap 'rm -rf "$STAGING"' EXIT
 
 # ---- 找 Xcode：xcode-select 指向 CommandLineTools 时自动探测 ----
+# 兼容本地（Xcode.app / Xcode-beta.app）与 CI 运行器（Xcode_26.2.app 等命名），
+# 有多个时按版本号取最新（部署目标 macOS 26.5 需要足够新的 SDK）
 if ! command -v xcodebuild >/dev/null 2>&1 \
    || [[ "$(xcode-select -p 2>/dev/null)" == *CommandLineTools* ]]; then
-  for dev in /Applications/Xcode-beta.app/Contents/Developer \
-             /Applications/Xcode.app/Contents/Developer; do
-    if [[ -x "$dev/usr/bin/xcodebuild" ]]; then
-      export DEVELOPER_DIR="$dev"
-      break
+  candidates=()
+  for p in /Applications/Xcode-beta.app /Applications/Xcode.app /Applications/Xcode_*.app; do
+    if [[ -x "$p/Contents/Developer/usr/bin/xcodebuild" ]]; then
+      candidates+=("$p")
     fi
   done
+  if ((${#candidates[@]})); then
+    newest="$(printf '%s\n' "${candidates[@]}" | sort -V | tail -1)"
+    export DEVELOPER_DIR="$newest/Contents/Developer"
+    log "自动选用 Xcode: $newest"
+  fi
 fi
 command -v xcodebuild >/dev/null 2>&1 || die "需要 Xcode（xcodebuild）"
 
