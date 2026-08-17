@@ -18,9 +18,12 @@ struct SidebarView: View {
         .navigationTitle("服务")
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 8) {
-                GlassButton("添加命令", systemImage: "plus", fillsWidth: true) {
+                // 固定宽度胶囊按钮：不随侧栏宽度拉伸（fillsWidth 会导致
+                // 侧栏窄时缩成圆、宽时拉得很长）
+                GlassButton("添加命令", systemImage: "plus", minWidth: 84) {
                     model.beginAdd()
                 }
+                Spacer(minLength: 0)
 
                 // 圆形玻璃设置按钮，打开设置窗口（整圆均可点击）
                 Button {

@@ -19,6 +19,9 @@ struct ContentView: View {
             }
         }
         .navigationSplitViewColumnWidth(min: 220, ideal: 260)
+        // 窗口最小尺寸：防止窗口缩得过小导致 macOS 把侧栏压过 220 下限，
+        // 挤压左下角添加/设置按钮（min: 220 只约束拖拽，不约束窗口缩放）
+        .frame(minWidth: 560, minHeight: 420)
         .sheet(isPresented: $model.presentEditor) {
             CommandEditorSheet(editing: model.editorTarget)
                 .environmentObject(model)
