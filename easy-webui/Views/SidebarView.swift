@@ -18,22 +18,17 @@ struct SidebarView: View {
                         CommandRowView(
                             runner: model.runtime(for: command),
                             command: command,
-                            isSelected: model.selectedID == command.id
-                        )
-                        .tag(command.id)
-                        .contextMenu {
-                            // 运行中禁用编辑：改的是"下次启动"的配置，已运行进程不受影响，
-                            // 与详情页工具栏"编辑"的禁用逻辑保持一致
-                            Button("编辑…") { model.beginEdit(command) }
-                                .disabled(model.runtimes[command.id]?.isRunning ?? false)
-                            Button("删除", role: .destructive) {
+                            isSelected: model.selectedID == command.id,
+                            onEdit: { model.beginEdit(command) },
+                            onDelete: {
                                 if model.runtimes[command.id]?.isRunning == true {
                                     pendingDelete = command
                                 } else {
                                     model.remove(command)
                                 }
                             }
-                        }
+                        )
+                        .tag(command.id)
                     }
                     .onMove(perform: moveRow)
                 } header: {
@@ -140,10 +135,14 @@ private struct GroupHeaderView: View {
 /// 单条命令行：状态点（实时动画）+ 名称/命令。
 /// 必须用 @ObservedObject 观察 runner，状态变化才会实时刷新本行。
 /// 仅选中行动画涟漪（animated），非选中行静态圆点，省常驻动画开销。
+/// contextMenu 放在行内而非 List 外层：行观察 runner，运行状态变化会实时
+/// 重建菜单，菜单项禁用状态才能立即生效（外层菜单只在 SidebarView 重算时更新）。
 private struct CommandRowView: View {
     @ObservedObject var runner: WebCLIRunner
     let command: CommandApp
     let isSelected: Bool
+    let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
@@ -163,5 +162,12 @@ private struct CommandRowView: View {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 7)
+        .contextMenu {
+            // 运行中禁用编辑：改的是"下次启动"的配置，已运行进程不受影响，
+            // 与详情页工具栏"编辑"的禁用逻辑保持一致
+            Button("编辑…") { onEdit() }
+                .disabled(runner.isRunning)
+            Button("删除", role: .destructive) { onDelete() }
+        }
     }
 }
