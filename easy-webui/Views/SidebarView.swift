@@ -14,6 +14,7 @@ struct SidebarView: View {
                         Button("删除", role: .destructive) { model.remove(command) }
                     }
             }
+            .onMove(perform: model.move)
         }
         .navigationTitle("服务")
         .safeAreaInset(edge: .bottom) {

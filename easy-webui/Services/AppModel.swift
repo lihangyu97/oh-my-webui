@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 import WebKit
 
 /// 状态中枢：命令列表 + 每命令的运行实例
@@ -94,6 +95,13 @@ final class AppModel: ObservableObject {
         }
         save()
         purgeWebData(for: command.id)
+    }
+
+    /// 拖拽排序（List.onMove 回调）：重排数组并持久化。
+    /// 数组顺序即持久化顺序，运行实例按 UUID 索引，与顺序无关，重排不影响任何进程。
+    func move(from source: IndexSet, to destination: Int) {
+        commands.move(fromOffsets: source, toOffset: destination)
+        save()
     }
 
     /// 删除服务时清掉它的持久化网页数据（localStorage/cookie 等）。
