@@ -24,13 +24,28 @@ struct CommandEditorSheet: View {
                           prompt: Text("npx @deepseek-ai/dsh web"))
                     .font(.system(.body, design: .monospaced))
                 HStack(spacing: 8) {
-                    TextField("工作目录（可选）", text: $workingDirectory)
+                    Text(workingDirectory.isEmpty ? "未设置（默认 home）" : workingDirectory)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(workingDirectory.isEmpty ? .secondary : .primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Button {
                         chooseWorkingDirectory()
                     } label: {
                         Label("选择…", systemImage: "folder")
                     }
+                    .buttonStyle(.bordered)
                     .help("用 Finder 选择工作目录")
+
+                    Button {
+                        workingDirectory = ""
+                    } label: {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(workingDirectory.isEmpty)
+                    .help("清除，恢复默认工作目录（~）")
                 }
                 Toggle("App 启动时自动运行", isOn: $autoStart)
                 Toggle("退出后自动重启", isOn: $restartOnExit)
