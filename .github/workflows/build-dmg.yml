@@ -38,6 +38,11 @@ jobs:
           sudo xcode-select -s "$latest/Contents/Developer"
           xcodebuild -version
 
+      - name: Run unit tests
+        run: |
+          xcodebuild test -project easy-webui.xcodeproj -scheme easy-webui \
+            -destination 'platform=macOS' -derivedDataPath .build-ci-test
+
       - name: Build & package DMG
         run: |
           if [[ -n "${{ github.event.inputs.version }}" ]]; then
