@@ -5,6 +5,8 @@ struct SidebarView: View {
     @Environment(\.openWindow) private var openWindow
     /// 折叠的组（key 为 CommandSection.id）；会话内有效，不持久化
     @State private var collapsedKeys: Set<String> = []
+    /// 待确认删除的运行中命令（运行中删除需二次确认，防误杀进程）
+    @State private var pendingDelete: CommandApp?
 
     var body: some View {
         List(selection: $model.selectedID) {
@@ -20,8 +22,17 @@ struct SidebarView: View {
                         )
                         .tag(command.id)
                         .contextMenu {
+                            // 运行中禁用编辑：改的是"下次启动"的配置，已运行进程不受影响，
+                            // 与详情页工具栏"编辑"的禁用逻辑保持一致
                             Button("编辑…") { model.beginEdit(command) }
-                            Button("删除", role: .destructive) { model.remove(command) }
+                                .disabled(model.runtimes[command.id]?.isRunning ?? false)
+                            Button("删除", role: .destructive) {
+                                if model.runtimes[command.id]?.isRunning == true {
+                                    pendingDelete = command
+                                } else {
+                                    model.remove(command)
+                                }
+                            }
                         }
                     }
                     .onMove(perform: moveRow)
@@ -31,6 +42,22 @@ struct SidebarView: View {
             }
         }
         .navigationTitle("服务")
+        // 运行中删除的二次确认（删除 = 终止进程，防误触）
+        .alert(
+            "删除运行中的命令？",
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            presenting: pendingDelete
+        ) { command in
+            Button("删除并终止进程", role: .destructive) {
+                model.remove(command)
+            }
+            Button("取消", role: .cancel) {}
+        } message: { command in
+            Text("“\(command.name)”正在运行，删除将终止其进程。")
+        }
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 8) {
                 // 固定宽度胶囊按钮：不随侧栏宽度拉伸（fillsWidth 会导致
