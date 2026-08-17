@@ -13,15 +13,22 @@ final class WebCLIRunner: ObservableObject {
     @Published private(set) var startedAt: Date?
 
     private var process: Process?
-    private var buffer = Data()            // 跨 read 块拼接，防止 URL 被拦腰切断
     private var stopRequested = false
     private let maxLogLines = 100
 
-    private let urlRegex: NSRegularExpression
+    /// 预编译正则：static let 全局一份，避免每个 runner 重复编译
+    nonisolated private static let urlRegex = try! NSRegularExpression(pattern: #"https?://[^\s\x{1B}\]]+"#)
 
-    init() {
-        urlRegex = try! NSRegularExpression(pattern: #"https?://[^\s\x{1B}\]]+"#)
+    /// 输出解析器：切行/去 ANSI 在后台串行队列完成，主线程只接收完整行。
+    /// 两个 FileHandle（stdout/stderr）共用同一队列，缓冲与切行天然串行，无数据竞争。
+    private lazy var parser = OutputParser { [weak self] lines in
+        // parser 保证回调已发生在主线程
+        MainActor.assumeIsolated {
+            self?.commitLines(lines)
+        }
     }
+
+    init() {}
 
     var isRunning: Bool {
         switch state {
@@ -101,13 +108,14 @@ final class WebCLIRunner: ObservableObject {
         state = .stopping
         stopRequested = true
         p.interrupt()                      // SIGINT，等价 Ctrl+C，TUI 程序一般优雅退出
+        // 捕获 process 而非 self：即使 runner 因删除命令被释放，进程清理仍会执行，
+        // 也不会用强引用延长 runner 的生命周期
+        let proc = p
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            guard let proc = self.process, proc.isRunning else { return }
-            proc.terminate()               // SIGTERM
+            if proc.isRunning { proc.terminate() }   // SIGTERM
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            guard let proc = self.process, proc.isRunning else { return }
-            kill(proc.processIdentifier, SIGKILL)   // 兜底强杀
+            if proc.isRunning { kill(proc.processIdentifier, SIGKILL) }   // 兜底强杀
         }
     }
 
@@ -127,30 +135,18 @@ final class WebCLIRunner: ObservableObject {
                 h.readabilityHandler = nil
                 return
             }
+            // hop 到主线程访问 parser（属性隔离），parser 内部再投到后台队列做切行/去 ANSI
             Task { @MainActor in
-                self.consume(data)
+                self.parser.append(data)
             }
         }
     }
 
-    private func consume(_ data: Data) {
-        buffer.append(data)
-        let text = String(decoding: buffer, as: UTF8.self)
-
-        var complete: [Substring]
-        if text.hasSuffix("\n") {
-            complete = text.split(separator: "\n", omittingEmptySubsequences: false)
-            buffer.removeAll(keepingCapacity: true)
-        } else {
-            let parts = text.split(separator: "\n", omittingEmptySubsequences: false)
-            complete = parts.dropLast()
-            buffer = Data((parts.last ?? "").utf8)   // 不完整的尾行留给下次
-        }
-
-        for line in complete {
-            let clean = Self.stripANSI(String(line))
-            appendLog(clean)
-            scanURL(in: clean)
+    /// 主线程：接收解析好的完整行，更新日志与 URL
+    private func commitLines(_ lines: [String]) {
+        for line in lines {
+            appendLog(line)
+            scanURL(in: line)
         }
     }
 
@@ -163,19 +159,81 @@ final class WebCLIRunner: ObservableObject {
     }
 
     private func scanURL(in text: String) {
-        let nsRange = NSRange(text.startIndex..., in: text)
-        urlRegex.enumerateMatches(in: text, range: nsRange) { match, _, _ in
-            guard let match, let r = Range(match.range(at: 0), in: text) else { return }
-            let raw = String(text[r])
-            // 去掉行尾常见标点
-            let trimmed = raw.trimmingCharacters(in: CharacterSet(charactersIn: "),.;:!?'\""))
-            if let u = URL(string: trimmed), u.scheme == "http" || u.scheme == "https" {
-                self.url = u
-            }
+        if let u = Self.firstURL(in: text) {
+            self.url = u
         }
     }
 
-    private static func stripANSI(_ s: String) -> String {
-        s.replacingOccurrences(of: #"\e\[[0-9;?]*[A-Za-z]"#, with: "", options: .regularExpression)
+    /// 从一行输出中提取第一个 http(s) URL（去掉行尾常见标点）。
+    /// 纯函数，便于单测。
+    nonisolated static func firstURL(in text: String) -> URL? {
+        let nsRange = NSRange(text.startIndex..., in: text)
+        var found: URL?
+        Self.urlRegex.enumerateMatches(in: text, range: nsRange) { match, _, stop in
+            guard let match, let r = Range(match.range(at: 0), in: text) else { return }
+            let raw = String(text[r])
+            let trimmed = raw.trimmingCharacters(in: CharacterSet(charactersIn: "),.;:!?'\""))
+            if let u = URL(string: trimmed), u.scheme == "http" || u.scheme == "https" {
+                found = u
+                stop.pointee = true
+            }
+        }
+        return found
+    }
+}
+
+/// 输出字节流解析器：把原始数据切成"去 ANSI 的完整行"。
+/// 声明为 nonisolated 脱离默认 MainActor 隔离，在自建串行队列上运行，
+/// 高频日志解析不占用主线程；两路输出共用同一队列，无数据竞争。
+nonisolated final class OutputParser {
+
+    private let queue = DispatchQueue(label: "lhy.easy-webui.output", qos: .userInitiated)
+    private var buffer = Data()            // 跨块拼接，防止 URL 被拦腰切断
+    private let ansiRegex = try! NSRegularExpression(pattern: #"\e\[[0-9;?]*[A-Za-z]"#)
+    /// 解析出完整行后的回调；实现保证已在主线程调用
+    private let onLines: @Sendable ([String]) -> Void
+
+    init(onLines: @escaping @Sendable ([String]) -> Void) {
+        self.onLines = onLines
+    }
+
+    /// 追加原始数据（任意线程调用，内部串行处理）
+    func append(_ data: Data) {
+        queue.async { [self] in
+            consume(data)
+        }
+    }
+
+    private func consume(_ data: Data) {
+        buffer.append(data)
+        let text = String(decoding: buffer, as: UTF8.self)
+
+        var complete: [String]
+        if text.hasSuffix("\n") {
+            complete = text.split(separator: "\n", omittingEmptySubsequences: false)
+                .map { Self.stripANSI($0, regex: ansiRegex) }
+            buffer.removeAll(keepingCapacity: true)
+        } else {
+            let parts = text.split(separator: "\n", omittingEmptySubsequences: false)
+            complete = parts.dropLast().map { Self.stripANSI($0, regex: ansiRegex) }
+            buffer = Data((parts.last ?? "").utf8)   // 不完整的尾行留给下次
+        }
+        // "a\nb\n" 按 \n 切分会带出末尾空串（"b" 与 ""），日志无意义，过滤掉
+        complete.removeAll { $0.isEmpty }
+
+        guard !complete.isEmpty else { return }
+        let lines = complete
+        DispatchQueue.main.async {
+            self.onLines(lines)
+        }
+    }
+
+    private static func stripANSI(_ s: Substring, regex: NSRegularExpression) -> String {
+        let str = String(s)
+        return regex.stringByReplacingMatches(
+            in: str,
+            range: NSRange(str.startIndex..., in: str),
+            withTemplate: ""
+        )
     }
 }

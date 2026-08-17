@@ -1,9 +1,12 @@
 import SwiftUI
 
-/// 运行状态指示点：running 时绿色圆点向外一圈圈扩散（涟漪脉冲动画）
+/// 运行状态指示点：running 时绿色圆点向外一圈圈扩散（涟漪脉冲动画）。
+/// animated = false 时 running 只显示静态绿点——用于非选中行，避免多个
+/// 常驻 repeatForever 动画叠加（服务多时省 GPU 合成开销）。
 struct StatusDot: View {
     let state: RunState
     var size: CGFloat = 8
+    var animated = true
 
     @State private var pulsing = false
 
@@ -18,7 +21,7 @@ struct StatusDot: View {
 
     var body: some View {
         ZStack {
-            if state == .running {
+            if state == .running && animated {
                 pulseRing(delay: 0)
                 pulseRing(delay: 0.9)
             }
