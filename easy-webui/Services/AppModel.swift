@@ -94,7 +94,10 @@ final class AppModel: ObservableObject {
             selectedID = commands.first?.id
         }
         save()
-        purgeWebData(for: command.id)
+        // 注意：不再清理该命令的网页数据（WKWebsiteDataStore）。
+        // 实测 WKWebsiteDataStore.remove(forIdentifier:) 在 WebKit 未初始化时调用必崩
+        // （崩溃在 WebKit 内部 RunLoop 的 os_unfair_lock，见 removeDataStoreWithIdentifierImpl），
+        // 且无法从 App 侧判断 WebKit 是否已初始化。数据残留无害，接受。
     }
 
     /// 拖拽排序（List.onMove 回调）：重排数组并持久化。
@@ -102,15 +105,6 @@ final class AppModel: ObservableObject {
     func move(from source: IndexSet, to destination: Int) {
         commands.move(fromOffsets: source, toOffset: destination)
         save()
-    }
-
-    /// 删除服务时清掉它的持久化网页数据（localStorage/cookie 等）。
-    /// 需先释放使用该 store 的 WKWebView：窗口内容此时已切到"服务不存在"，
-    /// 但 SwiftUI 释放视图树有短暂延迟，故延后 2 秒再删，失败则忽略（数据残留无害）。
-    private func purgeWebData(for id: UUID) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            WKWebsiteDataStore.remove(forIdentifier: id) { _ in }
-        }
     }
 
     // MARK: - 持久化
@@ -131,5 +125,53 @@ final class AppModel: ObservableObject {
         }
         // 首次运行：默认空列表，全部由用户手动添加
         return []
+    }
+
+    // MARK: - 分组
+
+    /// 有序分组（严格按 workingDirectory 完整路径精确匹配）。
+    /// 组顺序 = 该组第一条命令在数组中的位置，组内顺序 = 数组内相对顺序，
+    /// 因此无需额外字段，数组顺序承载全部顺序语义，拖拽重排直接持久化。
+    var commandSections: [CommandSection] {
+        var sections: [CommandSection] = []
+        var indexByKey: [String: Int] = [:]
+        for cmd in commands {
+            let key = cmd.workingDirectory ?? ""
+            if let i = indexByKey[key] {
+                sections[i].commands.append(cmd)
+            } else {
+                indexByKey[key] = sections.count
+                sections.append(CommandSection(path: cmd.workingDirectory, commands: [cmd]))
+            }
+        }
+        return sections
+    }
+}
+
+/// 一个命令分组（展示层派生，不持久化）。
+/// 注意：不能命名为 CommandGroup——会遮蔽 SwiftUI 的菜单命令组 API CommandGroup。
+/// path 为 nil 表示未设置工作目录——运行时默认在 home 目录（~）执行。
+struct CommandSection: Identifiable {
+    let path: String?          // 完整路径（分组键）；nil = 未设置
+    var commands: [CommandApp]
+
+    var id: String { path ?? "home" }
+
+    /// 组名：目录最后两级文件夹名（/a/b/c/d → "c/d"）；根目录显示 "/"；未设置显示 "home"
+    var title: String {
+        guard let path else { return "home" }
+        // 顺带容忍尾斜杠（旧数据可能手输过 /a/b/c/）
+        let p = path.hasSuffix("/") && path != "/" ? String(path.dropLast()) : path
+        let ns = p as NSString
+        let last = ns.lastPathComponent
+        guard !last.isEmpty else { return "/" }   // 根目录
+        let parentLast = (ns.deletingLastPathComponent as NSString).lastPathComponent
+        guard !parentLast.isEmpty else { return last }   // 单级路径 /a → a
+        return "\(parentLast)/\(last)"
+    }
+
+    /// tooltip：完整路径；未设置时为 home 目录完整路径
+    var tooltip: String {
+        path ?? FileManager.default.homeDirectoryForCurrentUser.path
     }
 }
