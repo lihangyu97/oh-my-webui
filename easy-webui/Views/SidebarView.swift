@@ -13,12 +13,16 @@ struct SidebarView: View {
                 // 展开/收起动画由系统处理（手动 if 条件渲染没有动画）
                 Section(isExpanded: isExpandedBinding(for: group.id)) {
                     ForEach(group.commands) { command in
-                        CommandRowView(runner: model.runtime(for: command), command: command)
-                            .tag(command.id)
-                            .contextMenu {
-                                Button("编辑…") { model.beginEdit(command) }
-                                Button("删除", role: .destructive) { model.remove(command) }
-                            }
+                        CommandRowView(
+                            runner: model.runtime(for: command),
+                            command: command,
+                            isSelected: model.selectedID == command.id
+                        )
+                        .tag(command.id)
+                        .contextMenu {
+                            Button("编辑…") { model.beginEdit(command) }
+                            Button("删除", role: .destructive) { model.remove(command) }
+                        }
                     }
                     .onMove(perform: moveRow)
                 } header: {
@@ -38,7 +42,7 @@ struct SidebarView: View {
 
                 // 圆形玻璃设置按钮，打开设置窗口（整圆均可点击）
                 Button {
-                    openWindow(id: "settings")
+                    openWindow(id: WindowID.settings)
                 } label: {
                     Image(systemName: "gearshape")
                         .font(.system(size: 14, weight: .medium))
@@ -108,13 +112,15 @@ private struct GroupHeaderView: View {
 
 /// 单条命令行：状态点（实时动画）+ 名称/命令。
 /// 必须用 @ObservedObject 观察 runner，状态变化才会实时刷新本行。
+/// 仅选中行动画涟漪（animated），非选中行静态圆点，省常驻动画开销。
 private struct CommandRowView: View {
     @ObservedObject var runner: WebCLIRunner
     let command: CommandApp
+    let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            StatusDot(state: runner.state)
+            StatusDot(state: runner.state, animated: isSelected)
                 .padding(.trailing, 2)
             VStack(alignment: .leading, spacing: 3) {
                 Text(command.name)

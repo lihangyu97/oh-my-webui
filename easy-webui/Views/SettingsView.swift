@@ -29,8 +29,8 @@ fileprivate final class DataFilesModel: ObservableObject {
 /// 目前只有一项：指定浏览器（用于详情页链接下方的"指定浏览器打开"按钮）。
 /// 未设置时使用系统默认浏览器。
 struct SettingsView: View {
-    @AppStorage("preferredBrowserPath") private var preferredBrowserPath = ""
-    @AppStorage("webWindowStyle") private var webWindowStyle = WebWindowStyle.normal.rawValue
+    @AppStorage(AppStorageKey.preferredBrowserPath) private var preferredBrowserPath = ""
+    @AppStorage(AppStorageKey.webWindowStyle) private var webWindowStyle = WebWindowStyle.normal.rawValue
 
     /// 数据存储位置列表（应用运行时写入本机的文件）
     @StateObject private var filesModel = DataFilesModel()
@@ -126,7 +126,7 @@ struct SettingsView: View {
     /// 收集所有运行时数据文件的预期路径
     private func makeRows(fm: FileManager) -> [DataFileRow] {
         let lib = fm.urls(for: .libraryDirectory, in: .userDomainMask).first!
-        let bundleID = Bundle.main.bundleIdentifier ?? "lhy.easy-webui"
+        let bundleID = Bundle.main.bundleIdentifier ?? AppBundle.fallbackID
         var rows: [DataFileRow] = []
 
         // 1. 服务配置（commands.json）

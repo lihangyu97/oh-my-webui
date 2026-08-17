@@ -28,7 +28,7 @@ struct easy_webuiApp: App {
         webviewScene().windowStyle(.hiddenTitleBar)
 
         // 设置：普通窗口（非系统设置浮窗），侧栏按钮与菜单"设置…"都会打开它
-        Window("设置", id: "settings") {
+        Window("设置", id: WindowID.settings) {
             SettingsView()
         }
         .defaultSize(width: 460, height: 300)
@@ -37,7 +37,7 @@ struct easy_webuiApp: App {
             // 把系统"设置…"菜单项指向普通设置窗口
             CommandGroup(replacing: .appSettings) {
                 Button("设置…") {
-                    openWindow(id: "settings")
+                    openWindow(id: WindowID.settings)
                 }
                 .keyboardShortcut(",")
             }
@@ -45,7 +45,7 @@ struct easy_webuiApp: App {
     }
 
     private func webviewScene() -> some Scene {
-        WindowGroup("内置浏览器", id: "webview", for: UUID.self) { $commandID in
+        WindowGroup("内置浏览器", id: WindowID.webview, for: UUID.self) { $commandID in
             if let commandID {
                 WebViewWindow(commandID: commandID)
                     .environmentObject(model)

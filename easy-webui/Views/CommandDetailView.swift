@@ -6,7 +6,7 @@ struct CommandDetailView: View {
     @Environment(\.openWindow) private var openWindow
     let command: CommandApp
     @ObservedObject var runner: WebCLIRunner
-    @AppStorage("preferredBrowserPath") private var preferredBrowserPath = ""
+    @AppStorage(AppStorageKey.preferredBrowserPath) private var preferredBrowserPath = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -116,7 +116,7 @@ struct CommandDetailView: View {
                 .help("复制地址到剪贴板")
 
                 Button {
-                    openWindow(id: "webview", value: command.id)
+                    openWindow(id: WindowID.webview, value: command.id)
                 } label: {
                     Label("在 App 内打开", systemImage: "macwindow")
                 }
